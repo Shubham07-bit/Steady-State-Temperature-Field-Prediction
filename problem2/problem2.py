@@ -76,7 +76,6 @@ class PhysicsInformedNN():
 
 
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-3)
-
         # self.optimizer = torch.optim.SGD(self.net.parameters(), lr=0.001)
 
         # typical MSE loss (this is a loss function)
