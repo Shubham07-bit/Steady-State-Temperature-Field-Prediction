@@ -337,7 +337,7 @@ class PhysicsInformedNN():
       ax.set_ylabel('y')
       ax.set_title('Temperature Distribution')
       plt.show()
-      plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem2/model_result.png')
+      plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem-non-dimensional/model_result.png')
 
     def plot_losses(self):
         plt.figure(figsize=(10, 6))
@@ -348,7 +348,7 @@ class PhysicsInformedNN():
         plt.legend()
         plt.grid(True)
         plt.show()
-        plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem2/loss_V_epoch.png')
+        plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem-non-dimensional/loss_V_epoch.png')
 
     def save_model(self, file_path):
       torch.save(self.net.state_dict(), file_path)
@@ -414,7 +414,7 @@ if __name__ == "__main__":
     plt.legend()
     plt.grid(True)
     plt.show()
-    plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem2/boundary_points.png')
+    plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem-non-dimensional/boundary_points.png')
 
     pinn = PhysicsInformedNN(X_T_train, X_F_train)
     pinn.train()
