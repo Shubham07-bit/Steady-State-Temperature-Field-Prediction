@@ -174,29 +174,38 @@ class PhysicsInformedNN():
       bc = -(theta_x + theta_y) - ((self.h*theta*self.lc)/self.k_star)
       return bc
     
-    def net_top(self,x,y):
-        theta = self.net_theta(x,y)
+    def check_for_nan_inf(self, tensor, name):
+        if torch.isnan(tensor).any() or torch.isinf(tensor).any():
+            print(f"{name} contains NaN or Inf values.")
+            print(tensor)
+
+    def net_top(self, x, y):
+        theta = self.net_theta(x, y)
 
         theta_x = torch.autograd.grad(
             theta, x,
-            grad_outputs = torch.ones_like(theta),
-            retain_graph = True,
-            create_graph = True
+            grad_outputs=torch.ones_like(theta),
+            retain_graph=True,
+            create_graph=True
         )[0]
 
-        theta_y= torch.autograd.grad(
+        theta_y = torch.autograd.grad(
             theta, y,
-            grad_outputs = torch.ones_like(theta),
-            retain_graph = True,
-            create_graph = True
+            grad_outputs=torch.ones_like(theta),
+            retain_graph=True,
+            create_graph=True
         )[0]
         self.t1 = (1/(self.k_star*self.delta_T))
         self.t2 = ((2*self.A_star*self.P_star)/np.pi*self.lc*self.r_b**2)
         self.t3 = torch.exp((-2*x**2)/self.r_b**2)
-        
+
         top = -(theta_x + theta_y) + (self.t1*self.t2*self.t3)
-        self.i+=1
-        # print(f"t1_{self.i}: {self.t1} t2_{self.i}: {self.t2} t3_{self.i}: {self.t3} x_{self.i}: {x} y_{self.i}: {y} top_{self.i}: {top} ")
+
+        # self.check_for_nan_inf(self.t1, "t1")
+        # self.check_for_nan_inf(self.t2, "t2")
+        self.check_for_nan_inf(self.t3, "t3")
+        # self.check_for_nan_inf(top, "top")
+
         return top
 
 
@@ -234,6 +243,7 @@ class PhysicsInformedNN():
         inside = (theta_xx + theta_yy)
         return inside
     
+
     def closure(self):
         # Reset gradient to zero
         self.optimizer.zero_grad()
@@ -282,8 +292,8 @@ class PhysicsInformedNN():
         self.iter += 1
 
         # print report:
-        if not self.iter % 100:
-            print('Epoch: {0:}, Total Loss: {1:6.3f}'.format(self.iter, self.ls) + f" Top_loss: {theta_top_loss} Right loss: {theta_right_loss} Left loss: {theta_left_loss}  Bottom loss: {theta_bottom_loss}  Inside loss: {F_loss_inside} device {device}")
+        # if not self.iter % 100:
+            # print('Epoch: {0:}, Total Loss: {1:6.3f}'.format(self.iter, self.ls) + f" Top_loss: {theta_top_loss} Right loss: {theta_right_loss} Left loss: {theta_left_loss}  Bottom loss: {theta_bottom_loss}  Inside loss: {F_loss_inside} device {device}")
         return self.ls
 
     def train(self, epochs=10000):
@@ -292,6 +302,7 @@ class PhysicsInformedNN():
         for _ in range(epochs):
             self.closure()
         self.plot_losses()
+
 
 
     def predict(self, x, y):
@@ -311,6 +322,8 @@ class PhysicsInformedNN():
       # x & t column
       xcol = X.reshape(-1, 1)/self.lc
       ycol = Y.reshape(-1, 1)/self.lc
+      print(xcol)
+      print(ycol)    
       # one large column
       theta_sol = self.predict(xcol, ycol)
 
@@ -337,7 +350,7 @@ class PhysicsInformedNN():
       ax.set_ylabel('y')
       ax.set_title('Temperature Distribution')
       plt.show()
-      plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem-non-dimensional/model_result.png')
+      plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem2/model_result.png')
 
     def plot_losses(self):
         plt.figure(figsize=(10, 6))
@@ -348,7 +361,7 @@ class PhysicsInformedNN():
         plt.legend()
         plt.grid(True)
         plt.show()
-        plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem-non-dimensional/loss_V_epoch.png')
+        plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem2/loss_V_epoch.png')
 
     def save_model(self, file_path):
       torch.save(self.net.state_dict(), file_path)
@@ -357,12 +370,11 @@ class PhysicsInformedNN():
       self.net.load_state_dict(torch.load(file_path))
 
 if __name__ == "__main__":
-    N_T = 2000  # Number of datapoints
+    N_T = 200  # Number of datapoints
     N_F = 10000 # Number of collocation points
     lc = 20e-6
-    domain_size = 100e-6/lc 
+    domain_size = 100e-6/lc # 100 micrometers
     
-
     # Left Boundary Points
     x_left = np.zeros((N_T//4, 1), dtype=float)
     y_left = np.random.uniform(0, domain_size, (N_T//4, 1))
@@ -370,7 +382,7 @@ if __name__ == "__main__":
 
     # Top Boundary Points
     x_top = np.random.uniform(0, domain_size, (N_T//4, 1))
-    y_top = np.full((N_T//4, 1),100e-6, dtype = float)
+    y_top = np.full((N_T//4, 1), domain_size, dtype = float)
     X_top = np.hstack((x_top, y_top))
 
     # Bottom Boundary Points
@@ -379,11 +391,13 @@ if __name__ == "__main__":
     X_bottom = np.hstack((x_bottom, y_bottom))
 
     # Right Boundary Points
-    x_right = np.full((N_T//4, 1), 100e-6, dtype=float)
+    x_right = np.full((N_T//4, 1), domain_size, dtype=float)
     y_right = np.random.uniform(0, domain_size, (N_T//4, 1))
     X_right = np.hstack((x_right, y_right))
 
+    # print(X_right)
     X_T_train = np.vstack((X_left, X_top, X_bottom, X_right))
+    print(X_T_train)
 
     # shuffle X_T_train:
     index = np.arange(0, N_T)
@@ -414,7 +428,7 @@ if __name__ == "__main__":
     plt.legend()
     plt.grid(True)
     plt.show()
-    plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem-non-dimensional/boundary_points.png')
+    plt.savefig('/home/iitgn-robotics-1/Desktop/Steady State Temperature Field Prediction/problem2/boundary_points.png')
 
     pinn = PhysicsInformedNN(X_T_train, X_F_train)
     pinn.train()
